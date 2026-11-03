@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Hungry Caterpillar</title>
+<style>
+body{font-family:Arial,sans-serif;text-align:center;background:linear-gradient(#d6f7c1,#fff9d6);padding:20px}
+#card{max-width:850px;margin:auto;background:#fff;padding:25px;border-radius:20px;box-shadow:0 0 15px rgba(0,0,0,.2)}
+.chinese{font-size:60px;color:#d32f2f}.pinyin{font-size:28px;min-height:35px}
+.choice{display:block;width:80%;margin:10px auto;padding:15px;font-size:22px;border:none;border-radius:10px;background:#81c784;color:#fff}
+.control-btn,.start{padding:10px 20px;margin:5px;border:none;border-radius:10px;color:#fff;cursor:pointer}
+.listen{background:#2196f3}.hint{background:#ff9800}.stop{background:#e53935}.start{background:#2e7d32}
+.correct{background:#4caf50!important}.wrong{background:#e53935!important}
+</style>
+</head><body>
+<h1>🐛 The Hungry Caterpillar</h1>
+<p>Listen to the Chinese word and choose the correct English meaning.</p>
+<div id='score'>Score: 0</div>
+<div id='card'>
+<div class='chinese' id='word'>点击开始</div>
+<div class='pinyin' id='pinyin'></div>
+<button class='control-btn listen' onclick='speakWord()'>🔊 Listen</button>
+<button class='control-btn hint' onclick='showPinyin()'>💡 Show Pinyin</button>
+<button class='control-btn stop' onclick='stopAudio()'>⏹ Stop Audio</button>
+<div id='choices'></div><div id='feedback'></div>
+</div><br>
+<button class='start' id='startBtn' onclick='startGame()'>▶ Start Game</button>
+<script>
+const vocab=[{cn:'苹果',py:'píng guǒ',en:'Apple'},{cn:'梨',py:'lí',en:'Pear'},{cn:'李子',py:'lǐ zi',en:'Plum'},{cn:'草莓',py:'cǎo méi',en:'Strawberry'},{cn:'橙子',py:'chéng zi',en:'Orange'},{cn:'蛋糕',py:'dàn gāo',en:'Cake'},{cn:'冰淇淋',py:'bīng qí lín',en:'Ice Cream'},{cn:'黄瓜',py:'huáng guā',en:'Cucumber'},{cn:'芝士',py:'zhī shì',en:'Cheese'},{cn:'火腿',py:'huǒ tuǐ',en:'Ham'},{cn:'棒棒糖',py:'bàng bàng táng',en:'Lollipop'},{cn:'香肠',py:'xiāng cháng',en:'Sausage'},{cn:'西瓜',py:'xī guā',en:'Watermelon'},{cn:'树叶',py:'shù yè',en:'Leaf'},{cn:'蝴蝶',py:'hú dié',en:'Butterfly'}];
+let score=0,current=0,questions=[],currentWord=null,audioTimers=[];
+const shuffle=a=>a.sort(()=>Math.random()-0.5);
+function startGame(){questions=shuffle([...vocab]);document.getElementById('startBtn').style.display='none';loadQuestion();}
+function speakWord(){if(!currentWord)return; speechSynthesis.cancel(); let u=new SpeechSynthesisUtterance(currentWord.cn);u.lang='zh-CN';speechSynthesis.speak(u);}
+function showPinyin(){document.getElementById('pinyin').textContent=currentWord.py;}
+function stopAudio(){speechSynthesis.cancel();audioTimers.forEach(clearTimeout);audioTimers=[];clearHighlights();}
+function loadQuestion(){if(current>=questions.length){showFinal();return;} let item=questions[current];currentWord=item;document.getElementById('word').textContent=item.cn;document.getElementById('pinyin').textContent='';let ans=[item.en];while(ans.length<4){let d=vocab[Math.floor(Math.random()*vocab.length)].en;if(!ans.includes(d))ans.push(d);}ans=shuffle(ans);choices.innerHTML='';ans.forEach(a=>{let b=document.createElement('button');b.className='choice';b.textContent=a;b.onclick=()=>checkAnswer(a,item,b);choices.appendChild(b);});setTimeout(speakWord,500)}
+function checkAnswer(a,item,b){document.querySelectorAll('.choice').forEach(x=>x.disabled=true);if(a===item.en){score++;b.classList.add('correct');feedback.textContent='✅ Correct!';}else{b.classList.add('wrong');feedback.textContent='❌ Correct: '+item.en;}document.getElementById('score').textContent='Score: '+score;setTimeout(()=>{current++;loadQuestion();},1800)}
+function clearHighlights(){vocab.forEach((w,i)=>{let r=document.getElementById('review-word-'+i);if(r){r.style.background='';}})}
+function highlightWord(i){clearHighlights();let r=document.getElementById('review-word-'+i);if(r)r.style.background='#fff59d';}
+function speakReviewWord(i){stopAudio();highlightWord(i);let w=vocab[i];speechSynthesis.speak(new SpeechSynthesisUtterance(w.cn));audioTimers.push(setTimeout(()=>speechSynthesis.speak(new SpeechSynthesisUtterance(w.en)),1200));}
+function playAllWords(){stopAudio();let d=0;vocab.forEach((w,i)=>{audioTimers.push(setTimeout(()=>{highlightWord(i);let u=new SpeechSynthesisUtterance(w.cn);u.lang='zh-CN';speechSynthesis.speak(u);},d));d+=2200;});}
+function showFinal(){let list='';vocab.forEach((w,i)=>list+=`<div id="review-word-${i}" style="display:flex;justify-content:space-between;padding:8px;border-bottom:1px solid #eee"><span><b>${w.cn}</b> (${w.py}) - ${w.en}</span><button onclick="speakReviewWord(${i})">🔊</button></div>`);document.getElementById('card').innerHTML=`<div style='font-size:90px'>🦋</div><h1>The Hungry Caterpillar</h1><h2>Final Score: ${score}/${questions.length}</h2><h3>📚 All Vocabulary</h3>${list}<br><button class='start' onclick='playAllWords()'>🔊 Listen to All Words</button><button class='start stop' onclick='stopAudio()'>⏹ Stop Audio</button><br><br><button class='start' onclick='location.reload()'>🔄 Play Again</button>`;}
+</script></body></html>
